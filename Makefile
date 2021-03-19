@@ -28,4 +28,7 @@ clean:
 	rm -rf venv/
 
 train:
-	python3 cmd/train.py --config config.yaml
+	PYTHONPATH=. python3 cmd/train.py --config config.yaml
+
+summary:
+	PYTHONPATH=. python3 cmd/model_summary.py

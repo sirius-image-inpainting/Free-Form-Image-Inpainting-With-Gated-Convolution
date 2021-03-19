@@ -134,7 +134,7 @@ class SNPatchGANDiscriminator(nn.Module):
 
             nn.LeakyReLU(negative_slope=leaky_relu_slope),
 
-            # layer 7
+            # layer 7 (256 x 4 x 4) -> (4096)
             nn.Flatten(),
         )
 

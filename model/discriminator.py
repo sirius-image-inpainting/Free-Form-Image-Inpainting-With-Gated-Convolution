@@ -40,6 +40,8 @@ class SNPatchGANConv2d(nn.Module):
         see https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html.
         """
 
+        super(SNPatchGANConv2d, self).__init__()
+
         self.conv = nn.utils.spectral_norm(nn.Conv2d(
                             in_channels=in_channels,
                             out_channels=out_channels,
@@ -92,7 +94,7 @@ class SNPatchGANDiscriminator(nn.Module):
                              out_channels=128,
                              kernel_size=5,
                              stride=2,
-                             padding=1),
+                             padding=2),
 
             nn.LeakyReLU(negative_slope=leaky_relu_slope),
 
@@ -101,7 +103,7 @@ class SNPatchGANDiscriminator(nn.Module):
                              out_channels=256,
                              kernel_size=5,
                              stride=2,
-                             padding=1),
+                             padding=2),
 
             nn.LeakyReLU(negative_slope=leaky_relu_slope),
 
@@ -110,7 +112,7 @@ class SNPatchGANDiscriminator(nn.Module):
                              out_channels=256,
                              kernel_size=5,
                              stride=2,
-                             padding=1),
+                             padding=2),
 
             nn.LeakyReLU(negative_slope=leaky_relu_slope),
 
@@ -119,7 +121,7 @@ class SNPatchGANDiscriminator(nn.Module):
                              out_channels=256,
                              kernel_size=5,
                              stride=2,
-                             padding=1),
+                             padding=2),
 
             nn.LeakyReLU(negative_slope=leaky_relu_slope),
 
@@ -128,7 +130,7 @@ class SNPatchGANDiscriminator(nn.Module):
                              out_channels=256,
                              kernel_size=5,
                              stride=2,
-                             padding=1),
+                             padding=2),
 
             nn.LeakyReLU(negative_slope=leaky_relu_slope),
 

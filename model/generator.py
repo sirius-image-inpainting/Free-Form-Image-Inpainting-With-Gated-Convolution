@@ -29,7 +29,7 @@ class SNPatchGANGenerator(nn.Module):
     SN-PatchGAN generator network module.
     """
 
-    def __init__(self, in_channels: int = 5,
+    def __init__(self, in_channels: int = 4,
                        leaky_relu_slope : float = 0.2):
         """
         SN-PatchGAN generator constructor.

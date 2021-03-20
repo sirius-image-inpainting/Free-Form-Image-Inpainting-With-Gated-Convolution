@@ -119,13 +119,30 @@ class SNPatchGANGenerator(nn.Module):
             gated_conv2d(16, 3, 3, 1, 1),               # layer 17 (16 x 256 x 256) -> (3 x 256 x 256)
         )
 
-        #  self.refine_dilated = nn.Sequential(
+        self.refine_conv = nn.Sequential(
+            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (5 x 256 x 256)  -> (32 x 256 x 256)
+            gated_conv2d(32, 32, 3, 2, 1),              # layer 02 (32 x 256 x 256) -> (32 x 128 x 128)
+            gated_conv2d(32, 64, 3, 1, 1),              # layer 03 (32 x 128 x 128) -> (64 x 128 x 128)
+            gated_conv2d(64, 64, 3, 2, 1),              # layer 04 (64 x 128 x 128) -> (64 x 64 x 64)
+            gated_conv2d(64, 128, 3, 1, 1),             # layer 05 (64 x 64 x 64)   -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 1),            # layer 06 (128 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 2, dil=2),     # layer 07 (128 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 4, dil=4),     # layer 08 (128 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 8, dil=8),     # layer 09 (128 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 16, dil=16),   # layer 10 (128 x 64 x 64)  -> (128 x 64 x 64)
+        )
 
-        #  )
-
-        #  self.refine_attention = nn.Sequential(
-
-        #  )
+        self.refine_attention = nn.Sequential(
+            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (5 x 256 x 256)  -> ()
+            gated_conv2d(32, 32, 3, 2, 1),
+            gated_conv2d(32, 64, 3, 1, 1),
+            gated_conv2d(64, 128, 3, 2, 1),
+            gated_conv2d(128, 128, 3, 1, 1),
+            gated_conv2d(128, 128, 3, 1, 1),
+            ml.SelfAttention(in_channels=128),
+            gated_conv2d(128, 128, 3, 1, 1),
+            gated_conv2d(128, 128, 3, 1, 1),
+        )
 
         #  self.refine_tail = nn.Sequential(
 
@@ -133,6 +150,7 @@ class SNPatchGANGenerator(nn.Module):
 
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
-        X = self.coarse(X)
-        return X
+        #  X = self.coarse(X)
+        X_1 = self.refine_attention(X)
+        return X_1
 

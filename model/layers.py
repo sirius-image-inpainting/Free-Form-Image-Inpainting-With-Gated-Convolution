@@ -130,6 +130,30 @@ class GatedConv2d(nn.Module):
 
 
 
+class GatedUpConv2d(nn.Module):
+
+    def __init__(self, *args, scale_factor: int = 2, **kwargs):
+        """
+        Gated convolution layer with scaling. For more information
+        see `GatedConv2d` parameter description.
+
+        Parameters
+        ----------
+        scale_factor : int
+            Scaling factor.
+        """
+
+        super(GatedUpConv2d, self).__init__()
+        self.conv = GatedConv2d(*args, **kwargs)
+        self.scaling_factor = scale_factor
+
+
+    def forward(self, X: torch.Tensor) -> torch.Tensor:
+        X = F.interpolate(X, scale_factor=self.scaling_factor)
+        return self.conv(X)
+
+
+
 class SelfAttention(nn.Module):
 
     def __init__(self, in_channels: int,

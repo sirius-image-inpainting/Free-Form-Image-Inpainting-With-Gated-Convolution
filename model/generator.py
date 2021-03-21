@@ -100,7 +100,7 @@ class SNPatchGANGenerator(nn.Module):
 
 
         self.coarse = nn.Sequential(
-            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (5 x 256 x 256)  -> (32 x 256 x 256)
+            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (4 x 256 x 256)  -> (32 x 256 x 256)
             gated_conv2d(32, 64, 3, 2, 1),              # layer 02 (32 x 256 x 256) -> (64 x 128 x 128)
             gated_conv2d(64, 64, 3, 1, 1),              # layer 03 (64 x 128 x 128) -> (64 x 128 x 128)
             gated_conv2d(64, 128, 3, 2, 1),             # layer 04 (64 x 128 x 128) -> (128 x 64 x 64)
@@ -120,7 +120,7 @@ class SNPatchGANGenerator(nn.Module):
         )
 
         self.refine_conv = nn.Sequential(
-            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (5 x 256 x 256)  -> (32 x 256 x 256)
+            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (4 x 256 x 256)  -> (32 x 256 x 256)
             gated_conv2d(32, 32, 3, 2, 1),              # layer 02 (32 x 256 x 256) -> (32 x 128 x 128)
             gated_conv2d(32, 64, 3, 1, 1),              # layer 03 (32 x 128 x 128) -> (64 x 128 x 128)
             gated_conv2d(64, 64, 3, 2, 1),              # layer 04 (64 x 128 x 128) -> (64 x 64 x 64)
@@ -133,15 +133,15 @@ class SNPatchGANGenerator(nn.Module):
         )
 
         self.refine_attention = nn.Sequential(
-            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (5 x 256 x 256)  -> ()
-            gated_conv2d(32, 32, 3, 2, 1),
-            gated_conv2d(32, 64, 3, 1, 1),
-            gated_conv2d(64, 128, 3, 2, 1),
-            gated_conv2d(128, 128, 3, 1, 1),
-            gated_conv2d(128, 128, 3, 1, 1),
-            ml.SelfAttention(in_channels=128),
-            gated_conv2d(128, 128, 3, 1, 1),
-            gated_conv2d(128, 128, 3, 1, 1),
+            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (4 x 256 x 256)  -> (32 x 256 x 256)
+            gated_conv2d(32, 32, 3, 2, 1),              # layer 02 (32 x 256 x 256) -> (32 x 128 x 128)
+            gated_conv2d(32, 64, 3, 1, 1),              # layer 03 (32 x 128 x 128) -> (64 x 128 x 128)
+            gated_conv2d(64, 128, 3, 2, 1),             # layer 04 (64 x 128 x 128) -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 1),            # layer 05 (128 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 1),            # layer 06 (128 x 64 x 64)  -> (128 x 64 x 64)
+            ml.SelfAttention(in_channels=128),          # layer 07 (128 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 1),            # layer 08 (128 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 1),            # layer 09 (128 x 64 x 64)  -> (128 x 64 x 64)
         )
 
         #  self.refine_tail = nn.Sequential(

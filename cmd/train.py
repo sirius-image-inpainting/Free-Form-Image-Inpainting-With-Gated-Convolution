@@ -8,6 +8,7 @@ Date: 2021-03-22
 
 # ==================== [IMPORT] ====================
 
+import os
 import torch
 import pytorch_lightning as pl
 
@@ -21,9 +22,17 @@ def train():
     model = gan.SNPatchGAN()
     data = loader.PlacesDataModule()
 
+    neptune_logger = pl.loggers.NeptuneLogger(
+            api_key=os.environ['NEPTUNE_API_TOKEN'],
+            project_name="silentz/Sirius",
+            params=dict(),
+        )
+
     trainer = pl.Trainer(
-            logger=True,
-            max_epochs=10,
+            gpus=1,                # use gpu,
+            logger=neptune_logger, # neptune logger
+            max_epochs=10,         # epoch count
+            val_check_interval=50, # check each 50 batch
         )
 
     trainer.fit(model, data)

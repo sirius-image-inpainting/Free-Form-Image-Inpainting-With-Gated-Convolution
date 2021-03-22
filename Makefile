@@ -34,5 +34,5 @@ clean:
 	rm -rf venv/
 
 train:
-	PYTHONPATH=. python3 cmd/train.py --config config.yaml
+	PYTHONPATH=. python3 cmd/train.py
 

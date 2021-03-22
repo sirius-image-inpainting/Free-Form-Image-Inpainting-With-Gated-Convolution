@@ -191,7 +191,7 @@ class Dataset(torch.utils.data.Dataset):
         image = cv2.imread(filename).astype(np.float)
         image = image.astype(np.float32)
         image = torch.from_numpy(image)
-        return image, filename
+        return image
 
 
     def __len__(self):
@@ -222,9 +222,9 @@ class MaskedDataset(Dataset):
             Index of item to return.
         """
 
-        image, filename = super().__getitem__(index)
+        image = super().__getitem__(index)
         mask = torch.from_numpy(generate_random_mask())
-        return image, filename, mask
+        return image, mask
 
 
 

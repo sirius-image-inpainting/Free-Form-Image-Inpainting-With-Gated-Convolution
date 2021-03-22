@@ -113,18 +113,20 @@ class SNPatchGAN(pl.LightningModule):
         g_loss = model.loss.GeneratorLoss()
         d_loss = model.loss.DiscriminatorLoss()
 
-        # generator step
-        fake_images = self(images, masks)
-        all_images = torch.cat([fake_images, images], dim=0)
-        double_masks = torch.cat([masks, masks], dim=0)
+        with torch.no_grad():
+            # generator step
+            fake_images = self(images, masks)
+            all_images = torch.cat([fake_images, images], dim=0)
+            double_masks = torch.cat([masks, masks], dim=0)
 
-        all_output = self.discriminator(all_images, double_masks)
-        fake_output = all_output[:batch_size]
-        real_output = all_output[batch_size:]
+            # discriminator step
+            all_output = self.discriminator(all_images, double_masks)
+            fake_output = all_output[:batch_size]
+            real_output = all_output[batch_size:]
 
-        self.log('d_loss_val', d_loss(real_output, fake_output).item())
-        self.log('g_loss_val', g_loss(fake_output).item())
+            self.log('d_loss_val', d_loss(real_output, fake_output).item())
+            self.log('g_loss_val', g_loss(fake_output).item())
 
-        for image in fake_images:
-            self.logger.experiment.log_image('gan_out', image / 255)
+            for image in fake_images:
+                self.logger.experiment.log_image('gan_out', image / 255)
 

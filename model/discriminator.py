@@ -19,6 +19,7 @@ from typing import (
 )
 
 import model.layers as layers
+import model.utils
 
 
 # ===================== [CODE] =====================
@@ -63,6 +64,26 @@ class SNPatchGANDiscriminator(nn.Module):
         )
 
 
-    def forward(self, X: torch.Tensor) -> torch.Tensor:
-        return self.layers(X)
+    def forward(self, images: torch.Tensor, masks: torch.Tensor) -> torch.Tensor:
+        """
+        Forward step for discriminator module.
+
+        Parameters
+        ----------
+        images : torch.Tensor
+            Torch tensor of shape (B, 256, 256, 3), where B is batch size.
+        masks : torch.Tensor
+            Torch tensor of shape (B, 256, 256), where B is batch size.
+        """
+
+        # shaping input data
+        normalized_images = model.utils.normalize_tensor(images,
+                                    smin=0, smax=255, tmin=-1, tmax=1)
+        shaped_images = normalized_images.permute(0, 3, 1, 2)  # (B, H, W, C) -> (B, C, H, W)
+        shaped_masks  = torch.unsqueeze(masks, dim=1)          # (B, H, W) -> (B, 1, H, W)
+
+        # evaling discriminator
+        input_tensor = torch.cat([shaped_images, shaped_masks], dim=1)
+        output = self.layers(input_tensor)
+        return output
 

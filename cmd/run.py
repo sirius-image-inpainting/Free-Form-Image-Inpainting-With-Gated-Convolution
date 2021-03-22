@@ -11,6 +11,7 @@ Date: 2021-03-22
 import os
 import cv2
 import torch
+import random
 import argparse
 import numpy as np
 import model.gan as gan
@@ -23,24 +24,17 @@ import matplotlib.pyplot as plt
 
 def load_image(image_path: str):
     if image_path is not None:
-        return torch.from_numpy(cv2.imread(image_path)).permute(2, 0, 1)
+        return torch.from_numpy(cv2.imread(image_path))
 
-    dataloader = data_ops.PlacesDataset('data/valid/')
-    random_image_id = np.random.choice(len(dataloader))
-    random_image = dataloader[random_image_id][0:3, :, :]
+    dataloader = data_ops.Dataset('data/valid/')
+    random_image = random.choice(dataloader)
     return random_image
 
 
 
 def load_random_mask():
-    mask = torch.from_numpy(data_ops.generate_random_mask())
-    mask = mask.view(1, *mask.shape)
+    mask = data_ops.generate_random_mask()
     return mask
-
-
-
-def transform_image(image):
-    return image.detach().permute(1, 2, 0) / 255
 
 
 
@@ -48,21 +42,21 @@ def run(checkpoint_path: str, image_path: str):
     model = gan.SNPatchGAN()
     model.load_from_checkpoint(checkpoint_path)
 
-    image = load_image(image_path)
-    mask = load_random_mask()
-    image_and_mask = torch.cat([image, mask], dim=0)
+    origin_image = load_image(image_path)
+    origin_mask = load_random_mask()
 
     with torch.no_grad():
-        gan_output = model(torch.unsqueeze(image_and_mask, dim=0))[0]
-        gan_output = model.finalize_output(gan_output)
+        image = torch.unsqueeze(origin_image, dim=0)
+        mask = torch.unsqueeze(origin_mask, dim=0)
+        gan_output = model(image, mask)[0]
 
     fig, ax = plt.subplots(1, 4, figsize=(16, 4))
-    ax[0].imshow(transform_image(image))
+    ax[0].imshow(origin_image / 255)
     ax[0].set_title('Original image')
-    ax[1].imshow(mask[0, :, :])
+    ax[1].imshow(origin_mask)
     ax[1].set_title('Mask')
-    ax[2].imshow(transform_image((1 - mask[0, :, :]) * image))
-    ax[2].set_title('Masked image')
+    #  ax[2].imshow((1 - origin_mask) * origin_image)
+    #  ax[2].set_title('Masked image')
     ax[3].imshow(gan_output / 255)
     ax[3].set_title('GAN output')
     plt.show()

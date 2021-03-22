@@ -7,6 +7,7 @@ Data loading and preprocessing utils.
 import cv2
 import torch
 import numpy as np
+import pytorch_lightning as pl
 
 import math
 import random
@@ -177,6 +178,7 @@ class PlacesDataset(torch.utils.data.Dataset):
         filename = self.files[index]
         image = cv2.imread(filename).astype(np.float)
         image = np.transpose(image, axes=(2, 0, 1))
+        image = image.astype(np.float32)
 
         if self.make_mask:
             mask = generate_random_mask(width=256, height=256)
@@ -193,4 +195,47 @@ class PlacesDataset(torch.utils.data.Dataset):
         """
 
         return len(self.files)
+
+
+
+class PlacesDataModule(pl.LightningDataModule):
+
+    def __init__(self, train_root: str = TRAIN_DATASET_ROOT,
+                       valid_root: str = VALID_DATASET_ROOT,
+                       test_root: str = TEST_DATASET_ROOT,
+                       batch_size: int = 4):
+        """
+        Pytorch-ligtning datamodule for places2 dataset.
+
+        Parameters
+        ----------
+        train_root : str
+            Root directory for train dataset.
+        valid_root : str
+            Root directory for test dataset.
+        test_root : str
+            Root directory for test dataset.
+        batch_size : int
+            Batch size.
+        """
+
+        self.train_root = train_root
+        self.valid_root = valid_root
+        self.test_root = test_root
+        self.batch_size = batch_size
+
+
+    def train_dataloader(self):
+        dataset = PlacesDataset(self.train_root)
+        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size)
+
+
+    def val_dataloader(self):
+        dataset = PlacesDataset(self.valid_root)
+        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size)
+
+
+    def test_dataloader(self):
+        dataset = PlacesDataset(self.test_root)
+        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size)
 

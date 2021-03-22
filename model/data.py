@@ -129,7 +129,6 @@ def generate_random_mask(height: int = 256,
 class PlacesDataset(torch.utils.data.Dataset):
 
     def __init__(self, root: str,
-                       transform: bool = True,
                        make_mask: bool = True,
                        file_ext: str = 'jpg',
                        seed: int = 42):
@@ -140,8 +139,6 @@ class PlacesDataset(torch.utils.data.Dataset):
         ----------
         root : str
             Root directory of dataset.
-        transform : bool
-            Transform image or not.
         make_mask : bool
             If true, generates mask for each image.
         file_ext : str
@@ -155,7 +152,6 @@ class PlacesDataset(torch.utils.data.Dataset):
         self.root = root
         self.file_ext = file_ext
         self.seed = seed
-        self.transform = transform
         self.make_mask = make_mask
 
         # loading file names
@@ -180,13 +176,12 @@ class PlacesDataset(torch.utils.data.Dataset):
 
         filename = self.files[index]
         image = cv2.imread(filename).astype(np.float)
-
-        if self.transform:
-            image = (image / 255) * 2 - 1
+        image = np.transpose(image, axes=(2, 0, 1))
 
         if self.make_mask:
             mask = generate_random_mask(width=256, height=256)
-            image = np.concatenate([image, mask], axis=1)
+            mask = mask.reshape(1, 256, 256)
+            image = np.concatenate([image, mask], axis=0)
 
         image = torch.from_numpy(image)
         return image

@@ -223,7 +223,7 @@ class MaskedDataset(Dataset):
         """
 
         image = super().__getitem__(index)
-        mask = torch.from_numpy(generate_random_mask())
+        mask = generate_random_mask()
         return image, mask
 
 

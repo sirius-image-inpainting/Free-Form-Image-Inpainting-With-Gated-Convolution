@@ -132,7 +132,8 @@ class PlacesDataset(torch.utils.data.Dataset):
     def __init__(self, root: str,
                        make_mask: bool = True,
                        file_ext: str = 'jpg',
-                       seed: int = 42):
+                       seed: int = 42,
+                       max_size: int = None):
         """
         Dataset constructor.
 
@@ -154,6 +155,7 @@ class PlacesDataset(torch.utils.data.Dataset):
         self.file_ext = file_ext
         self.seed = seed
         self.make_mask = make_mask
+        self.max_size = max_size
 
         # loading file names
         root_path = pathlib.Path(self.root)
@@ -194,6 +196,9 @@ class PlacesDataset(torch.utils.data.Dataset):
         Get dataset size.
         """
 
+        if self.max_size is not None:
+            return min(len(self.files), self.max_size)
+
         return len(self.files)
 
 
@@ -203,7 +208,8 @@ class PlacesDataModule(pl.LightningDataModule):
     def __init__(self, train_root: str = TRAIN_DATASET_ROOT,
                        valid_root: str = VALID_DATASET_ROOT,
                        test_root: str = TEST_DATASET_ROOT,
-                       batch_size: int = 4):
+                       batch_size: int = 4,
+                       num_workers: int = 16):
         """
         Pytorch-ligtning datamodule for places2 dataset.
 
@@ -217,6 +223,8 @@ class PlacesDataModule(pl.LightningDataModule):
             Root directory for test dataset.
         batch_size : int
             Batch size.
+        num_workers: int
+            Number of dataloader workers.
         """
 
         super(PlacesDataModule, self).__init__()
@@ -225,19 +233,20 @@ class PlacesDataModule(pl.LightningDataModule):
         self.valid_root = valid_root
         self.test_root = test_root
         self.batch_size = batch_size
+        self.num_workers = num_workers
 
 
     def train_dataloader(self):
         dataset = PlacesDataset(self.train_root)
-        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
     def val_dataloader(self):
-        dataset = PlacesDataset(self.valid_root)
-        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size)
+        dataset = PlacesDataset(self.valid_root, max_size=10)
+        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
     def test_dataloader(self):
         dataset = PlacesDataset(self.test_root)
-        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size)
+        return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 

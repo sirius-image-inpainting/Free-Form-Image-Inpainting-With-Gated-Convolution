@@ -125,7 +125,7 @@ def generate_random_mask(height: int = 256,
         mask.transpose(Image.FLIP_TOP_BOTTOM)
 
     mask = np.asarray(mask, np.float32)
-    return mask
+    return torch.from_numpy(mask)
 
 
 

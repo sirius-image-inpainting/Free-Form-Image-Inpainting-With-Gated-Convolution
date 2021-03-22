@@ -19,6 +19,7 @@ from typing import (
 )
 
 import model.layers as ml
+import model.utils
 
 
 # ===================== [CODE] =====================
@@ -170,27 +171,31 @@ class SNPatchGANGenerator(nn.Module):
         """
 
         # shaping input data
-        permuted_images = images.permute(0, 3, 1, 2)   # (B, H, W, C) -> (B, C, H, W)
-        expanded_masks = torch.unsqueeze(masks, dim=1) # (B, H, W) -> (B, 1, H, W)
-        normalized_images = (permuted_images / 255) * 2  - 1
+        normalized_images = model.utils.normalize_tensor(images,
+                                    smin=0, smax=255, tmin=-1, tmax=1)
+        shaped_images = normalized_images.permute(0, 3, 1, 2)  # (B, H, W, C) -> (B, C, H, W)
+        shaped_masks  = torch.unsqueeze(masks, dim=1)          # (B, H, W) -> (B, 1, H, W)
 
         # masking input images
-        masked_images = normalized_images * (1 - expanded_masks)
-        input_tensor = torch.cat([masked_images, expanded_masks], dim=1)
+        masked_images = shaped_images * (1 - shaped_masks)
+        input_tensor  = torch.cat([masked_images, shaped_masks], dim=1)
 
         # step 1: coarse reconstruct
         X_coarse = self.coarse(input_tensor)
-        X_rec_empty = normalized_images * (1 - expanded_masks) + X_coarse * expanded_masks
+        X_rec_empty = masked_images + X_coarse * shaped_masks
 
         # step 2: refinement
-        X_rec_with_masks = torch.cat([X_rec_empty, expanded_masks], dim=1)
+        X_rec_with_masks = torch.cat([X_rec_empty, shaped_masks], dim=1)
         X_refine_b1 = self.refine_conv(X_rec_with_masks)
         X_refine_b2 = self.refine_attention(X_rec_with_masks)
         X_refine_all = torch.cat([X_refine_b1, X_refine_b2], dim=1)
         X_refine_out = self.refine_tail(X_refine_all)
 
         # merging refinement with original image
-        X_out = X_refine_out * expanded_masks + normalized_images * (1 - expanded_masks)
-        X_out = ((X_out + 1) / 2) * 255
+        X_out = X_refine_out * shaped_masks + shaped_images * (1 - shaped_masks)
+
+        # making image out of tensor
+        X_out = model.utils.normalize_tensor(X_out, smin=-1, smax=1, tmin=0, tmax=255)
+        X_out = X_out.permute(0, 2, 3, 1)
         return X_out
 

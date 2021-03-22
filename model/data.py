@@ -9,6 +9,8 @@ import torch
 import numpy as np
 import pytorch_lightning as pl
 
+import os
+import json
 import math
 import random
 import pathlib
@@ -130,10 +132,10 @@ def generate_random_mask(height: int = 256,
 class PlacesDataset(torch.utils.data.Dataset):
 
     def __init__(self, root: str,
-                       make_mask: bool = True,
                        file_ext: str = 'jpg',
                        seed: int = 42,
-                       max_size: int = None):
+                       max_size: int = None,
+                       create_index: bool = True):
         """
         Dataset constructor.
 
@@ -154,13 +156,21 @@ class PlacesDataset(torch.utils.data.Dataset):
         self.root = root
         self.file_ext = file_ext
         self.seed = seed
-        self.make_mask = make_mask
         self.max_size = max_size
 
-        # loading file names
-        root_path = pathlib.Path(self.root)
-        self.files = list(root_path.rglob('*.' + self.file_ext))
-        self.files = [str(x) for x in self.files]
+        index_filename = os.path.join(self.root, 'index.json')
+
+        if os.path.exists(index_filename):
+            with open(index_filename, 'r') as file:
+                self.files = json.load(file)
+        else:
+            root_path = pathlib.Path(self.root)
+            self.files = list(root_path.rglob('*.' + self.file_ext))
+            self.files = [str(x) for x in self.files]
+
+        if create_index:
+            with open(index_filename, 'w') as file:
+                json.dump(self.files, file)
 
         # shuffling
         random.seed(self.seed)
@@ -179,14 +189,7 @@ class PlacesDataset(torch.utils.data.Dataset):
 
         filename = self.files[index]
         image = cv2.imread(filename).astype(np.float)
-        image = np.transpose(image, axes=(2, 0, 1))
         image = image.astype(np.float32)
-
-        if self.make_mask:
-            mask = generate_random_mask(width=256, height=256)
-            mask = mask.reshape(1, 256, 256)
-            image = np.concatenate([image, mask], axis=0)
-
         image = torch.from_numpy(image)
         return image
 

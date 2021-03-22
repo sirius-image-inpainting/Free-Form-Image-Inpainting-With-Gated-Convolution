@@ -129,7 +129,7 @@ def generate_random_mask(height: int = 256,
 
 
 
-class PlacesDataset(torch.utils.data.Dataset):
+class Dataset(torch.utils.data.Dataset):
 
     def __init__(self, root: str,
                        file_ext: str = 'jpg',
@@ -151,7 +151,7 @@ class PlacesDataset(torch.utils.data.Dataset):
             Seed for random shuffle.
         """
 
-        super(PlacesDataset, self).__init__()
+        super(Dataset, self).__init__()
 
         self.root = root
         self.file_ext = file_ext
@@ -177,9 +177,9 @@ class PlacesDataset(torch.utils.data.Dataset):
         random.shuffle(self.files)
 
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> (torch.Tensor, str):
         """
-        Get dataset element by key.
+        Get image and its filename by key.
 
         Parameters
         ----------
@@ -191,7 +191,7 @@ class PlacesDataset(torch.utils.data.Dataset):
         image = cv2.imread(filename).astype(np.float)
         image = image.astype(np.float32)
         image = torch.from_numpy(image)
-        return image
+        return image, filename
 
 
     def __len__(self):
@@ -203,6 +203,28 @@ class PlacesDataset(torch.utils.data.Dataset):
             return min(len(self.files), self.max_size)
 
         return len(self.files)
+
+
+
+class MaskedDataset(Dataset):
+
+    def __init__(self, *args, **kwargs):
+        super(MaskedDataset, self).__init__(*args, **kwargs)
+
+
+    def __getitem__(self, index: int) -> (torch.Tensor, str, torch.Tensor):
+        """
+        Get image, image filename and mask.
+
+        Parameters
+        ----------
+        index : int
+            Index of item to return.
+        """
+
+        image, filename = super().__getitem__(index)
+        mask = torch.from_numpy(generate_random_mask())
+        return image, filename, mask
 
 
 
@@ -240,16 +262,16 @@ class PlacesDataModule(pl.LightningDataModule):
 
 
     def train_dataloader(self):
-        dataset = PlacesDataset(self.train_root)
+        dataset = MaskedDataset(self.train_root)
         return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
     def val_dataloader(self):
-        dataset = PlacesDataset(self.valid_root, max_size=10)
+        dataset = MaskedDataset(self.valid_root, max_size=10)
         return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 
 
     def test_dataloader(self):
-        dataset = PlacesDataset(self.test_root)
+        dataset = MaskedDataset(self.test_root)
         return torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, num_workers=self.num_workers)
 

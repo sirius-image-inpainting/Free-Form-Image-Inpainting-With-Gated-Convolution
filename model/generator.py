@@ -196,5 +196,7 @@ class SNPatchGANGenerator(nn.Module):
         X_refine_all = torch.cat([X_refine_b1, X_refine_b2], dim=1)
         X_refine_out = self.refine_tail(X_refine_all)
 
-        return X_refine_out
+        # merging refinement with original image
+        X_out = X_refine_out * image_masks + images * (1 - image_masks)
+        return X_out
 

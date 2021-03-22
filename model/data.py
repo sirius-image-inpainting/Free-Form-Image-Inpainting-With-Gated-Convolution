@@ -219,6 +219,8 @@ class PlacesDataModule(pl.LightningDataModule):
             Batch size.
         """
 
+        super(PlacesDataModule, self).__init__()
+
         self.train_root = train_root
         self.valid_root = valid_root
         self.test_root = test_root

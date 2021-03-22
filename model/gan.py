@@ -36,17 +36,7 @@ class SNPatchGAN(pl.LightningModule):
         self.unused_ = lambda x: None
 
 
-    def forward(self, X: torch.Tensor) -> torch.Tensor:
-        # reading shape
-        batch_size = X.shape[0]
-        channels = X.shape[1]
-        height = X.shape[2]
-        width = X.shape[3]
-
-        # dividing images and masks
-        images = X[:, 0:3, :, :]
-        image_masks = X[:, 3, :, :].view(batch_size, 1, height, width)
-
+    def forward(self, images: torch.Tensor, masks: torch.Tensor) -> torch.Tensor:
         # normalizing images into [-1; 1] range
         images = (images / 255) * 2 - 1
 
@@ -56,32 +46,7 @@ class SNPatchGAN(pl.LightningModule):
 
         # generator step
         gen_images = self.generator(masked_images_masks)
-        gen_images_masks = torch.cat([gen_images, image_masks], dim=1)
-        return gen_images_masks
-
-
-    def finalize_output(self, X: torch.Tensor) -> np.ndarray:
-        """
-        Get image out of model output.
-        """
-
-        images = None
-
-        if len(X.shape) not in [3, 4]:
-            raise ValueError('X must be tensor with shape (B, C, W, H) or (C, W, H)')
-
-        # batch version
-        if len(X.shape) == 4:
-            images = X[:, 0:3, :, :]
-            images = images.cpu().numpy()
-            images = ((images + 1) / 2) * 255
-            return np.transpose(images, axes=(0, 2, 3, 1))
-
-        # standalone version
-        image = X[0:3, :, :]
-        image = image.cpu().numpy()
-        image = ((image + 1) / 2) * 255
-        return np.transpose(image, axes=(1, 2, 0))
+        return gen_images
 
 
     def configure_optimizers(self):
@@ -96,15 +61,20 @@ class SNPatchGAN(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx):
         self.unused_(batch_idx)
 
+        # unpacking batch
+        images = batch[0]
+        masks = batch[1]
+        batch_size = batch.shape[0]
+
+        # init losses
         g_loss = model.loss.GeneratorLoss()
         d_loss = model.loss.DiscriminatorLoss()
-        batch_size = batch.shape[0]
 
         # discriminator training step
         if optimizer_idx == 0:
-            fake_images_and_masks = self(batch)
-            real_images_and_masks = batch
-            all_images_and_masks = torch.cat([fake_images_and_masks, batch])
+            fake_images = self(images, masks)
+            real_images = batch
+            all_images = torch.cat([fake_images, batch])
 
             all_output = self.discriminator(all_images_and_masks)
             fake_output = all_output[:batch_size]
@@ -129,20 +99,27 @@ class SNPatchGAN(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         self.unused_(batch_idx)
 
+        # unpacking batch
+        images = batch[0]
+        masks = batch[1]
+        batch_size = len(batch)
+
+        # init losses
         g_loss = model.loss.GeneratorLoss()
         d_loss = model.loss.DiscriminatorLoss()
-        batch_size = batch.shape[0]
 
-        fake_images_and_masks = self(batch)
-        all_images_and_masks = torch.cat([fake_images_and_masks, batch])
+        # generator step
+        fake_images = self(images, masks)
+        all_images = torch.cat([fake_images, images])
+        double_masks = torch.cat([masks, masks], dim=0)
 
-        all_output = self.discriminator(all_images_and_masks)
+        all_output = self.discriminator(all_images, double_masks)
         fake_output = all_output[:batch_size]
         real_output = all_output[batch_size:]
 
         self.log('d_loss_val', d_loss(real_output, fake_output).item())
         self.log('g_loss_val', g_loss(fake_output).item())
 
-        for image in self.finalize_output(fake_images_and_masks):
+        for image in self.finalize_output(fake_images):
             self.logger.experiment.log_image('gan_out', image)
 

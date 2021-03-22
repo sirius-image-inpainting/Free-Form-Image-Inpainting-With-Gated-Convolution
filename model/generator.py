@@ -157,46 +157,40 @@ class SNPatchGANGenerator(nn.Module):
         )
 
 
-    def forward(self, X: torch.Tensor) -> torch.Tensor:
+    def forward(self, images: torch.Tensor, masks: torch.Tensor) -> torch.Tensor:
         """
         Forward step for generator module.
 
         Parameters
         ----------
-        X : torch.Tensor
-            Torch tensor of shape (B, 4, 256, 256), where B is batch size.
-            First three channels - image channels, each pixel in [-1, 1].
-            Last channel - mask channel, each pixel in {0, 1}.
+        images : torch.Tensor
+            Torch tensor of shape (B, 256, 256, 3), where B is batch size.
+        masks : torch.Tensor
+            Torch tensor of shape (B, 256, 256), where B is batch size.
         """
 
-        batch_size = X.shape[0]
-        channels = X.shape[1]
-        height = X.shape[2]
-        width = X.shape[3]
-
-        # sanity check
-        assert channels == 4
-
-        # fetching masks and images
-        image_masks = X[:, 3, : ,:].view(batch_size, 1, height, width)
-        images = X[:, 0:3, :, :]
+        # shaping input data
+        permuted_images = images.permute(0, 3, 1, 2)   # (B, H, W, C) -> (B, C, H, W)
+        expanded_masks = torch.unsqueeze(masks, dim=1) # (B, H, W) -> (B, 1, H, W)
+        normalized_images = (permuted_images / 255) * 2  - 1
 
         # masking input images
-        masked_images = images * (1 - image_masks)
-        input_tensor = torch.cat([masked_images, image_masks], dim=1)
+        masked_images = normalized_images * (1 - expanded_masks)
+        input_tensor = torch.cat([masked_images, expanded_masks], dim=1)
 
         # step 1: coarse reconstruct
         X_coarse = self.coarse(input_tensor)
-        X_rec_empty = images * (1 - image_masks) + X_coarse * image_masks
+        X_rec_empty = normalized_images * (1 - expanded_masks) + X_coarse * expanded_masks
 
         # step 2: refinement
-        X_rec_with_masks = torch.cat([X_rec_empty, image_masks], dim=1)
+        X_rec_with_masks = torch.cat([X_rec_empty, expanded_masks], dim=1)
         X_refine_b1 = self.refine_conv(X_rec_with_masks)
         X_refine_b2 = self.refine_attention(X_rec_with_masks)
         X_refine_all = torch.cat([X_refine_b1, X_refine_b2], dim=1)
         X_refine_out = self.refine_tail(X_refine_all)
 
         # merging refinement with original image
-        X_out = X_refine_out * image_masks + images * (1 - image_masks)
+        X_out = X_refine_out * expanded_masks + normalized_images * (1 - expanded_masks)
+        X_out = ((X_out + 1) / 2) * 255
         return X_out
 

@@ -25,6 +25,7 @@ def train():
     neptune_logger = pl.loggers.NeptuneLogger(
             api_key=os.environ['NEPTUNE_API_TOKEN'],
             project_name="silentz/Sirius",
+            experiment_name='NeptuneGAN',
             params=dict(),
         )
 

@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import pytorch_lightning as pl
+import numpy as np
 
 import model.loss
 import model.generator
@@ -59,11 +60,35 @@ class SNPatchGAN(pl.LightningModule):
         return gen_images_masks
 
 
+    def finalize_output(self, X: torch.Tensor) -> np.ndarray:
+        """
+        Get image out of model output.
+        """
+
+        images = None
+
+        if len(X.shape) not in [3, 4]:
+            raise ValueError('X must be tensor with shape (B, C, W, H) or (C, W, H)')
+
+        # batch version
+        if len(X.shape) == 4:
+            images = X[:, 0:3, :, :]
+            images = images.cpu().numpy()
+            images = ((images + 1) / 2) * 255
+            return np.transpose(images, axes=(0, 2, 3, 1))
+
+        # standalone version
+        image = X[0:3, :, :]
+        image = image.cpu().numpy()
+        image = ((image + 1) / 2) * 255
+        return np.transpose(image, axes=(1, 2, 0))
+
+
     def configure_optimizers(self):
         generator_opt = torch.optim.Adam(self.generator.parameters())
         discriminator_opt = torch.optim.Adam(self.discriminator.parameters())
         return (
-                {'optimizer': discriminator_opt, 'frequency': 5},
+                {'optimizer': discriminator_opt, 'frequency': 10},
                 {'optimizer': generator_opt,     'frequency': 1},
             )
 
@@ -79,8 +104,7 @@ class SNPatchGAN(pl.LightningModule):
         if optimizer_idx == 0:
             fake_images_and_masks = self(batch)
             real_images_and_masks = batch
-            all_images_and_masks = torch.cat([fake_images_and_masks,
-                                              real_images_and_masks])
+            all_images_and_masks = torch.cat([fake_images_and_masks, batch])
 
             all_output = self.discriminator(all_images_and_masks)
             fake_output = all_output[:batch_size]
@@ -100,4 +124,25 @@ class SNPatchGAN(pl.LightningModule):
             self.log('g_loss', loss.item())
 
             return loss
+
+
+    def validation_step(self, batch, batch_idx):
+        self.unused_(batch_idx)
+
+        g_loss = model.loss.GeneratorLoss()
+        d_loss = model.loss.DiscriminatorLoss()
+        batch_size = batch.shape[0]
+
+        fake_images_and_masks = self(batch)
+        all_images_and_masks = torch.cat([fake_images_and_masks, batch])
+
+        all_output = self.discriminator(all_images_and_masks)
+        fake_output = all_output[:batch_size]
+        real_output = all_output[batch_size:]
+
+        self.log('d_loss_val', d_loss(real_output, fake_output).item())
+        self.log('g_loss_val', g_loss(fake_output).item())
+
+        for image in self.finalize_output(fake_images_and_masks):
+            self.logger.experiment.log_image('gan_out', image)
 

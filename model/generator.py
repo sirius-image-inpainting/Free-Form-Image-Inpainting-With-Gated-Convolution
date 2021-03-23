@@ -115,7 +115,7 @@ class SNPatchGANGenerator(nn.Module):
             gated_conv2d(64, 64, 3, 1, 1),              # layer 14 (64 x 128 x 128) -> (64 x 128 x 128)
             gated_upconv2d(64, 32, 3, 1, 1),            # layer 15 (64 x 128 x 128) -> (32 x 256 x 256)
             gated_conv2d(32, 16, 3, 1, 1),              # layer 16 (32 x 256 x 256) -> (16 x 256 x 256)
-            gated_conv2d(16, 3, 3, 1, 1, act=False),    # layer 17 (16 x 256 x 256) -> (3 x 256 x 256)
+            gated_conv2d(16, 3, 3, 1, 1, act=None),    # layer 17 (16 x 256 x 256) -> (3 x 256 x 256)
         )
 
         self.refine_conv = nn.Sequential(
@@ -150,7 +150,7 @@ class SNPatchGANGenerator(nn.Module):
             gated_conv2d(64, 64, 3, 1, 1),              # layer 04 (64 x 128 x 128) -> (64 x 128 x 128)
             gated_upconv2d(64, 32, 3, 1, 1),            # layer 05 (64 x 128 x 128) -> (32 x 256 x 256)
             gated_conv2d(32, 16, 3, 1, 1),              # layer 06 (32 x 256 x 256) -> (16 x 256 x 256)
-            gated_conv2d(16, 3, 3, 1, 1, act=False),    # layer 07 (16 x 256 x 256) -> (3 x 256 x 256)
+            gated_conv2d(16, 3, 3, 1, 1, act=None),    # layer 07 (16 x 256 x 256) -> (3 x 256 x 256)
         )
 
 

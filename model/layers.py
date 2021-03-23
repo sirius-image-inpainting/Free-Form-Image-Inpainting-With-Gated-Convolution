@@ -83,7 +83,7 @@ class GatedConv2d(nn.Module):
                        groups: int = 1,
                        bias: bool = True,
                        padding_mode: str = 'zeros',
-                       activation: torch.nn.Module = nn.ELU()):
+                       activation: torch.nn.Module = nn.LeakyReLU(0.2)):
         """
         Constructor for GatedConv2d. For parameter explanation
         see https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html.

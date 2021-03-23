@@ -46,7 +46,8 @@ class SNPatchGANGenerator(nn.Module):
         super(SNPatchGANGenerator, self).__init__()
 
 
-        def gated_conv2d(inp: int, out: int, kern: int, strd: int, pad: int, dil: int = 1, act: bool = True):
+        def gated_conv2d(inp: int, out: int, kern: int, strd: int, pad: int, dil: int = 1,
+                         act = nn.LeakyReLU(0.2)):
             """
             Make GatedConv2d layer (followed by activation function)
             with given parameters.
@@ -65,17 +66,12 @@ class SNPatchGANGenerator(nn.Module):
                 Padding.
             dil : int
                 Dilation.
-            act : bool
-                Add activation or not.
+            act
+                Activation func.
             """
 
             conv = ml.GatedConv2d(in_channels=inp, out_channels=out, kernel_size=kern,
-                        stride=strd, padding=pad, dilation=dil)
-            relu = nn.LeakyReLU(negative_slope=leaky_relu_slope)
-
-            if act:
-                return nn.Sequential(conv, relu)
-
+                        stride=strd, padding=pad, dilation=dil, activation=act)
             return conv
 
 
@@ -98,11 +94,8 @@ class SNPatchGANGenerator(nn.Module):
                 Padding.
             """
 
-            return nn.Sequential(
-                    ml.GatedUpConv2d(in_channels=inp, out_channels=out, kernel_size=kern,
-                        stride=strd, padding=pad),
-                    nn.LeakyReLU(negative_slope=leaky_relu_slope),
-                )
+            return ml.GatedUpConv2d(in_channels=inp, out_channels=out, kernel_size=kern,
+                                    stride=strd, padding=pad)
 
 
         self.coarse = nn.Sequential(

@@ -125,8 +125,11 @@ class GatedConv2d(nn.Module):
     def forward(self, X: torch.Tensor) -> torch.Tensor:
         gating = self.conv_gating(X)
         feature = self.conv_feature(X)
-        output = self.feature_act(feature) * self.gating_act(gating)
-        return output
+
+        if self.feature_act is None:
+            return feature * self.gating_act(gating)
+
+        return self.feature_act(feature) * self.gating_act(gating)
 
 
 

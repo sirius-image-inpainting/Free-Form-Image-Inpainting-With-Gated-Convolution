@@ -38,23 +38,53 @@ class DiscriminatorLoss(nn.Module):
 
 
 
-class ReconLoss(nn.Module):
+class ReconLoss(torch.nn.Module):
     """
-    L1 loss between original image and reconstructed image.
+    L1 loss between original image and reconstructed images.
     """
 
-    def __init__(self, alpha: float = 20):
+    def __init__(self):
         super(ReconLoss, self).__init__()
-        self.alpha = alpha
+        self.recon_inmask_alpha  = 1.2
+        self.recon_outmask_alpha = 1.2
+        self.coarse_inmask_alpha  = 1.2
+        self.coarse_outmask_alpha = 1.2
 
 
-    def forward(self, real: torch.Tensor, fake: torch.Tensor, masks: torch.Tensor) -> torch.Tensor:
-        normalized_real = model.utils.normalize_tensor(real, 0, 255, -1, 1)
-        normalized_fake = model.utils.normalize_tensor(fake, 0, 255, -1, 1)
-        shaped_real = normalized_real.permute(0, 3, 1, 2)
-        shaped_fake = normalized_fake.permute(0, 3, 1, 2)
-        shaped_masks = masks.view(masks.size(0), 1, masks.size(1), masks.size(2))
-        masks_mean = shaped_masks.view(masks.size(0), -1).mean(1).view(-1, 1, 1, 1)
-        loss = torch.abs(shaped_real - shaped_fake) * shaped_masks / masks_mean
-        return self.alpha * torch.mean(loss)
+    def loss(self, images_1: torch.Tensor,
+                   images_2: torch.Tensor,
+                   masks: torch.Tensor,
+                   coef: float) -> torch.Tensor:
+
+        masks_bit_ratio = torch.mean(masks.view(masks.size(0), -1), dim=1)
+        masks_bit_ratio = masks_bit_ratio.view(-1, 1, 1, 1)
+        masks = torch.unsqueeze(masks, dim=3)
+
+        masked_diff = torch.abs(images_1 - images_2) * masks / masks_bit_ratio
+        loss = coef * torch.mean(masked_diff)
+        return loss
+
+
+    def forward(self, images: torch.Tensor,
+                      coarse_images: torch.Tensor,
+                      recon_images: torch.Tensor,
+                      masks: torch.Tensor) -> torch.Tensor:
+        """
+        Parameters
+        ----------
+        images : torch.Tensor
+            Torch tensor of shape (B, H, W, 3) containing original images.
+        coarse_images : torch.Tensor
+            Torch tensor of shape (B, H, W, 3) containing coarse generated images.
+        recon_images : torch.Tensor
+            Torch tensor of shape (B, H, W, 3) containing reconstructed images.
+        masks : torch.Tensor
+            Torch tensor of shape (B, H, W) containing masks.
+        """
+
+        recon_inmsak_loss  = self.loss(images, recon_images, masks, self.recon_inmask_alpha)
+        recon_outmask_loss = self.loss(images, recon_images, 1- masks, self.recon_outmask_alpha)
+        coarse_inmask_loss = self.loss(images, coarse_images, masks, self.coarse_inmask_alpha)
+        coarse_outmask_loss = self.loss(images, coarse_images, 1 - masks, self.coarse_outmask_alpha)
+        return recon_inmsak_loss + recon_outmask_loss + coarse_inmask_loss + coarse_outmask_loss
 

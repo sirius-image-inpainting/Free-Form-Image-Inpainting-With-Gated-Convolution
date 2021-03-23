@@ -99,7 +99,7 @@ class SNPatchGAN(pl.LightningModule):
             d_output = self.discriminator(fake_images, masks)
 
             loss_1 = g_loss(d_output)
-            loss_2 = r_loss(images, fake_images, masks)
+            loss_2 = r_loss(images, coarse_images, fake_images, masks)
             loss = loss_1 + loss_2
 
             self.log('g_loss', loss_1.item())

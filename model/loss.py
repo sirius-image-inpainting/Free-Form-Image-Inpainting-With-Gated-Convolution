@@ -43,7 +43,7 @@ class ReconLoss(nn.Module):
     L1 loss between original image and reconstructed image.
     """
 
-    def __init__(self, alpha: float = 1.2):
+    def __init__(self, alpha: float = 20):
         super(ReconLoss, self).__init__()
         self.alpha = alpha
 

@@ -40,10 +40,11 @@ def load_random_mask():
 
 def run(checkpoint_path: str, image_path: str):
     model = gan.SNPatchGAN()
-    model.load_from_checkpoint(checkpoint_path)
+    model = model.load_from_checkpoint(checkpoint_path)
 
     origin_image = load_image(image_path)
     origin_mask = load_random_mask()
+    channeled_mask = torch.unsqueeze(origin_mask, dim=2)
 
     with torch.no_grad():
         image = torch.unsqueeze(origin_image, dim=0)
@@ -55,8 +56,8 @@ def run(checkpoint_path: str, image_path: str):
     ax[0].set_title('Original image')
     ax[1].imshow(origin_mask)
     ax[1].set_title('Mask')
-    #  ax[2].imshow((1 - origin_mask) * origin_image)
-    #  ax[2].set_title('Masked image')
+    ax[2].imshow((1 - channeled_mask) * origin_image / 255)
+    ax[2].set_title('Masked image')
     ax[3].imshow(gan_output / 255)
     ax[3].set_title('GAN output')
     plt.show()

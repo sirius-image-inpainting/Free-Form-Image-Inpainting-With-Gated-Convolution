@@ -19,6 +19,8 @@ import model.data as loader
 
 
 def train():
+    pl.seed_everything(42)
+
     model = gan.SNPatchGAN()
     data = loader.PlacesDataModule()
 

@@ -188,7 +188,8 @@ class Dataset(torch.utils.data.Dataset):
         """
 
         filename = self.files[index]
-        image = cv2.imread(filename).astype(np.float)
+        image = cv2.imread(filename)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = image.astype(np.float32)
         image = torch.from_numpy(image)
         return image

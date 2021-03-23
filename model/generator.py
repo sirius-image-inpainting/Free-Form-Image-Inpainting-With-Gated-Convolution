@@ -118,7 +118,7 @@ class SNPatchGANGenerator(nn.Module):
             gated_upconv2d(64, 32, 3, 1, 1),            # layer 15 (64 x 128 x 128) -> (32 x 256 x 256)
             gated_conv2d(32, 16, 3, 1, 1),              # layer 16 (32 x 256 x 256) -> (16 x 256 x 256)
             gated_conv2d(16, 3, 3, 1, 1),               # layer 17 (16 x 256 x 256) -> (3 x 256 x 256)
-            nn.Tanh(),                                  # layer 18 (3 x 256 x 256)  -> (3 x 256 x 256)
+            #  nn.Tanh(),                                  # layer 18 (3 x 256 x 256)  -> (3 x 256 x 256)
         )
 
         self.refine_conv = nn.Sequential(
@@ -154,7 +154,7 @@ class SNPatchGANGenerator(nn.Module):
             gated_upconv2d(64, 32, 3, 1, 1),            # layer 05 (64 x 128 x 128) -> (32 x 256 x 256)
             gated_conv2d(32, 16, 3, 1, 1),              # layer 06 (32 x 256 x 256) -> (16 x 256 x 256)
             gated_conv2d(16, 3, 3, 1, 1),               # layer 07 (16 x 256 x 256) -> (3 x 256 x 256)
-            nn.Tanh(),                                  # layer 08 (3 x 256 x 256)  -> (3 x 256 x 256)
+            #  nn.Tanh(),                                  # layer 08 (3 x 256 x 256)  -> (3 x 256 x 256)
         )
 
 
@@ -182,6 +182,7 @@ class SNPatchGANGenerator(nn.Module):
 
         # step 1: coarse reconstruct
         X_coarse = self.coarse(input_tensor)
+        X_coarse = torch.clamp(X_coarse, -1., 1.)
         X_rec_empty = masked_images + X_coarse * shaped_masks
 
         # step 2: refinement
@@ -190,6 +191,7 @@ class SNPatchGANGenerator(nn.Module):
         X_refine_b2 = self.refine_attention(X_rec_with_masks)
         X_refine_all = torch.cat([X_refine_b1, X_refine_b2], dim=1)
         X_refine_out = self.refine_tail(X_refine_all)
+        X_refine_out = torch.clamp(X_refine_out, -1., 1.)
 
         # merging refinement with original image
         X_out = X_refine_out * shaped_masks + shaped_images * (1 - shaped_masks)

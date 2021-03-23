@@ -32,7 +32,7 @@ class DiscriminatorLoss(nn.Module):
     """
 
     def forward(self, X_real: torch.Tensor, X_fake: torch.Tensor) -> torch.Tensor:
-        real_loss = torch.mean(F.relu(1. - X_real))
+        real_loss = 10 * torch.mean(F.relu(1. - X_real))
         fake_loss = torch.mean(F.relu(1. + X_fake))
         return real_loss + fake_loss
 
@@ -45,10 +45,10 @@ class ReconLoss(torch.nn.Module):
 
     def __init__(self):
         super(ReconLoss, self).__init__()
-        self.recon_inmask_alpha  = 1.2
-        self.recon_outmask_alpha = 1.2
-        self.coarse_inmask_alpha  = 1.2
-        self.coarse_outmask_alpha = 1.2
+        self.recon_inmask_alpha  = 1 / 40
+        self.recon_outmask_alpha = 1 / 40
+        self.coarse_inmask_alpha  = 1 / 40
+        self.coarse_outmask_alpha = 1 / 40
 
 
     def loss(self, images_1: torch.Tensor,

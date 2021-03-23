@@ -48,7 +48,7 @@ def run(checkpoint_path: str, image_path: str):
     with torch.no_grad():
         image = torch.unsqueeze(origin_image, dim=0)
         mask = torch.unsqueeze(origin_mask, dim=0)
-        gan_output = model(image, mask)[0]
+        gan_output = model(image, mask)[0][0]
 
     fig, ax = plt.subplots(1, 4, figsize=(16, 4))
     ax[0].imshow(origin_image / 255)

@@ -60,7 +60,7 @@ class SNPatchGAN(pl.LightningModule):
         generator_opt = torch.optim.Adam(self.generator.parameters(), lr=0.0001)
         discriminator_opt = torch.optim.Adam(self.discriminator.parameters(), lr=0.0004)
         return (
-                {'optimizer': discriminator_opt, 'frequency': 2},
+                {'optimizer': discriminator_opt, 'frequency': 1},
                 {'optimizer': generator_opt,     'frequency': 1},
             )
 

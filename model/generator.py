@@ -46,7 +46,7 @@ class SNPatchGANGenerator(nn.Module):
         super(SNPatchGANGenerator, self).__init__()
 
 
-        def gated_conv2d(inp: int, out: int, kern: int, strd: int, pad: int, dil: int = 1):
+        def gated_conv2d(inp: int, out: int, kern: int, strd: int, pad: int, dil: int = 1, act: bool = True):
             """
             Make GatedConv2d layer (followed by activation function)
             with given parameters.
@@ -65,13 +65,18 @@ class SNPatchGANGenerator(nn.Module):
                 Padding.
             dil : int
                 Dilation.
+            act : bool
+                Add activation or not.
             """
 
-            return nn.Sequential(
-                    ml.GatedConv2d(in_channels=inp, out_channels=out, kernel_size=kern,
-                        stride=strd, padding=pad, dilation=dil),
-                    nn.LeakyReLU(negative_slope=leaky_relu_slope),
-                )
+            conv = ml.GatedConv2d(in_channels=inp, out_channels=out, kernel_size=kern,
+                        stride=strd, padding=pad, dilation=dil)
+            relu = nn.LeakyReLU(negative_slope=leaky_relu_slope)
+
+            if act:
+                return nn.Sequential(conv, relu)
+
+            return conv
 
 
         def gated_upconv2d(inp: int, out: int, kern: int, strd: int, pad: int):
@@ -117,8 +122,7 @@ class SNPatchGANGenerator(nn.Module):
             gated_conv2d(64, 64, 3, 1, 1),              # layer 14 (64 x 128 x 128) -> (64 x 128 x 128)
             gated_upconv2d(64, 32, 3, 1, 1),            # layer 15 (64 x 128 x 128) -> (32 x 256 x 256)
             gated_conv2d(32, 16, 3, 1, 1),              # layer 16 (32 x 256 x 256) -> (16 x 256 x 256)
-            gated_conv2d(16, 3, 3, 1, 1),               # layer 17 (16 x 256 x 256) -> (3 x 256 x 256)
-            #  nn.Tanh(),                                  # layer 18 (3 x 256 x 256)  -> (3 x 256 x 256)
+            gated_conv2d(16, 3, 3, 1, 1, act=False),    # layer 17 (16 x 256 x 256) -> (3 x 256 x 256)
         )
 
         self.refine_conv = nn.Sequential(
@@ -153,8 +157,7 @@ class SNPatchGANGenerator(nn.Module):
             gated_conv2d(64, 64, 3, 1, 1),              # layer 04 (64 x 128 x 128) -> (64 x 128 x 128)
             gated_upconv2d(64, 32, 3, 1, 1),            # layer 05 (64 x 128 x 128) -> (32 x 256 x 256)
             gated_conv2d(32, 16, 3, 1, 1),              # layer 06 (32 x 256 x 256) -> (16 x 256 x 256)
-            gated_conv2d(16, 3, 3, 1, 1),               # layer 07 (16 x 256 x 256) -> (3 x 256 x 256)
-            #  nn.Tanh(),                                  # layer 08 (3 x 256 x 256)  -> (3 x 256 x 256)
+            gated_conv2d(16, 3, 3, 1, 1, act=False),    # layer 07 (16 x 256 x 256) -> (3 x 256 x 256)
         )
 
 
@@ -194,10 +197,10 @@ class SNPatchGANGenerator(nn.Module):
         X_refine_out = torch.clamp(X_refine_out, -1., 1.)
 
         # merging refinement with original image
-        X_out = X_refine_out * shaped_masks + shaped_images * (1 - shaped_masks)
+        X_recon = X_refine_out * shaped_masks + shaped_images * (1 - shaped_masks)
 
         # making image out of tensor
-        X_out = model.utils.normalize_tensor(X_out, smin=-1, smax=1, tmin=0, tmax=255)
-        X_out = X_out.permute(0, 2, 3, 1)
-        return X_out
+        X_recon = model.utils.normalize_tensor(X_recon, smin=-1, smax=1, tmin=0, tmax=255)
+        X_recon = X_recon.permute(0, 2, 3, 1)
+        return X_recon
 

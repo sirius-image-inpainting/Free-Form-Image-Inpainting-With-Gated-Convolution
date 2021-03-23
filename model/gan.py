@@ -80,7 +80,7 @@ class SNPatchGAN(pl.LightningModule):
 
         # discriminator training step
         if optimizer_idx == 0:
-            fake_images = self(images, masks)
+            fake_images, coarse_images = self(images, masks)
             all_images = torch.cat([fake_images, images], dim=0)
 
             double_masks = torch.cat([masks, masks], dim=0)
@@ -95,7 +95,7 @@ class SNPatchGAN(pl.LightningModule):
 
         # generator training step
         if optimizer_idx == 1:
-            fake_images = self(images, masks)
+            fake_images, coarse_images = self(images, masks)
             d_output = self.discriminator(fake_images, masks)
 
             loss_1 = g_loss(d_output)
@@ -120,7 +120,7 @@ class SNPatchGAN(pl.LightningModule):
         d_loss = model.loss.DiscriminatorLoss()
 
         # generator step
-        fake_images = self(images, masks)
+        fake_images, coarse_images = self(images, masks)
         all_images = torch.cat([fake_images, images], dim=0)
         double_masks = torch.cat([masks, masks], dim=0)
 

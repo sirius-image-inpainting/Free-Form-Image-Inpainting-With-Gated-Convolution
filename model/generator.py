@@ -186,10 +186,10 @@ class SNPatchGANGenerator(nn.Module):
         # step 1: coarse reconstruct
         X_coarse = self.coarse(input_tensor)
         X_coarse = torch.clamp(X_coarse, -1., 1.)
-        X_rec_empty = masked_images + X_coarse * shaped_masks
+        X_coarse = masked_images + X_coarse * shaped_masks
 
         # step 2: refinement
-        X_rec_with_masks = torch.cat([X_rec_empty, shaped_masks], dim=1)
+        X_rec_with_masks = torch.cat([X_coarse, shaped_masks], dim=1)
         X_refine_b1 = self.refine_conv(X_rec_with_masks)
         X_refine_b2 = self.refine_attention(X_rec_with_masks)
         X_refine_all = torch.cat([X_refine_b1, X_refine_b2], dim=1)
@@ -199,8 +199,12 @@ class SNPatchGANGenerator(nn.Module):
         # merging refinement with original image
         X_recon = X_refine_out * shaped_masks + shaped_images * (1 - shaped_masks)
 
-        # making image out of tensor
+        # making image out of tensors
         X_recon = model.utils.normalize_tensor(X_recon, smin=-1, smax=1, tmin=0, tmax=255)
         X_recon = X_recon.permute(0, 2, 3, 1)
-        return X_recon
+
+        X_coarse = model.utils.normalize_tensor(X_coarse, smin=-1, smax=1, tmin=0, tmax=255)
+        X_coarse = X_coarse.permute(0, 2, 3, 1)
+
+        return X_recon, X_coarse
 

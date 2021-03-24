@@ -60,7 +60,7 @@ class SNPatchGAN(pl.LightningModule):
         generator_opt = torch.optim.Adam(self.generator.parameters(), lr=0.0001)
         discriminator_opt = torch.optim.Adam(self.discriminator.parameters(), lr=0.0004)
         return (
-                {'optimizer': discriminator_opt, 'frequency': 1},
+                {'optimizer': discriminator_opt, 'frequency': 5},
                 {'optimizer': generator_opt,     'frequency': 1},
             )
 
@@ -100,7 +100,10 @@ class SNPatchGAN(pl.LightningModule):
 
             loss_1 = g_loss(d_output)
             loss_2 = r_loss(images, coarse_images, fake_images, masks)
-            loss = loss_1 + loss_2
+            loss = loss_1
+
+            if batch_idx % 100 == 0:
+                loss += loss_2
 
             self.log('g_loss', loss_1.item())
             self.log('r_loss', loss_2.item())

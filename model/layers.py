@@ -120,6 +120,7 @@ class GatedConv2d(nn.Module):
 
         self.gating_act = nn.Sigmoid()
         self.feature_act = activation
+        self.b_norm = nn.BatchNorm2d(out_channels)
 
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
@@ -127,9 +128,12 @@ class GatedConv2d(nn.Module):
         feature = self.conv_feature(X)
 
         if self.feature_act is None:
-            return feature * self.gating_act(gating)
+            output = feature * self.gating_act(gating)
+        else:
+            output = self.feature_act(feature) * self.gating_act(gating)
 
-        return self.feature_act(feature) * self.gating_act(gating)
+        output = self.b_norm(output)
+        return output
 
 
 

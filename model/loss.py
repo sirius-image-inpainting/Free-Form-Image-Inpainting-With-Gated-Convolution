@@ -32,7 +32,7 @@ class DiscriminatorLoss(nn.Module):
     """
 
     def forward(self, X_real: torch.Tensor, X_fake: torch.Tensor) -> torch.Tensor:
-        real_loss = 10 * torch.mean(F.relu(1. - X_real))
+        real_loss = torch.mean(F.relu(1. - X_real))
         fake_loss = torch.mean(F.relu(1. + X_fake))
         return real_loss + fake_loss
 

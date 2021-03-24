@@ -102,7 +102,7 @@ class SNPatchGAN(pl.LightningModule):
             loss_2 = r_loss(images, coarse_images, fake_images, masks)
             loss = loss_1
 
-            if batch_idx % 100 == 0:
+            if np.random.uniform(0, 1) >= 0.9:
                 loss += loss_2
 
             self.log('g_loss', loss_1.item())

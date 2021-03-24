@@ -118,19 +118,6 @@ class SNPatchGANGenerator(nn.Module):
             gated_conv2d(16, 3, 3, 1, 1, act=None),    # layer 17 (16 x 256 x 256) -> (3 x 256 x 256)
         )
 
-        self.refine_conv = nn.Sequential(
-            gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (4 x 256 x 256)  -> (32 x 256 x 256)
-            gated_conv2d(32, 32, 3, 2, 1),              # layer 02 (32 x 256 x 256) -> (32 x 128 x 128)
-            gated_conv2d(32, 64, 3, 1, 1),              # layer 03 (32 x 128 x 128) -> (64 x 128 x 128)
-            gated_conv2d(64, 64, 3, 2, 1),              # layer 04 (64 x 128 x 128) -> (64 x 64 x 64)
-            gated_conv2d(64, 128, 3, 1, 1),             # layer 05 (64 x 64 x 64)   -> (128 x 64 x 64)
-            gated_conv2d(128, 128, 3, 1, 1),            # layer 06 (128 x 64 x 64)  -> (128 x 64 x 64)
-            gated_conv2d(128, 128, 3, 1, 2, dil=2),     # layer 07 (128 x 64 x 64)  -> (128 x 64 x 64)
-            gated_conv2d(128, 128, 3, 1, 4, dil=4),     # layer 08 (128 x 64 x 64)  -> (128 x 64 x 64)
-            gated_conv2d(128, 128, 3, 1, 8, dil=8),     # layer 09 (128 x 64 x 64)  -> (128 x 64 x 64)
-            gated_conv2d(128, 128, 3, 1, 16, dil=16),   # layer 10 (128 x 64 x 64)  -> (128 x 64 x 64)
-        )
-
         self.refine_attention = nn.Sequential(
             gated_conv2d(in_channels, 32, 5, 1, 2),     # layer 01 (4 x 256 x 256)  -> (32 x 256 x 256)
             gated_conv2d(32, 32, 3, 2, 1),              # layer 02 (32 x 256 x 256) -> (32 x 128 x 128)
@@ -144,7 +131,8 @@ class SNPatchGANGenerator(nn.Module):
         )
 
         self.refine_tail = nn.Sequential(
-            gated_conv2d(256, 128, 3, 1, 1),            # layer 01 (256 x 64 x 64)  -> (128 x 64 x 64)
+            #  gated_conv2d(256, 128, 3, 1, 1),            # layer 01 (256 x 64 x 64)  -> (128 x 64 x 64)
+            gated_conv2d(128, 128, 3, 1, 1),            # layer 01 (256 x 64 x 64)  -> (128 x 64 x 64)
             gated_conv2d(128, 128, 3, 1, 1),            # layer 02 (128 x 64 x 64)  -> (128 x 64 x 64)
             gated_upconv2d(128, 64, 3, 1, 1),           # layer 03 (128 x 64 x 64)  -> (64 x 128 x 128)
             gated_conv2d(64, 64, 3, 1, 1),              # layer 04 (64 x 128 x 128) -> (64 x 128 x 128)
@@ -183,10 +171,8 @@ class SNPatchGANGenerator(nn.Module):
 
         # step 2: refinement
         X_rec_with_masks = torch.cat([X_coarse, shaped_masks], dim=1)
-        X_refine_b1 = self.refine_conv(X_rec_with_masks)
-        X_refine_b2 = self.refine_attention(X_rec_with_masks)
-        X_refine_all = torch.cat([X_refine_b1, X_refine_b2], dim=1)
-        X_refine_out = self.refine_tail(X_refine_all)
+        X_refine_out = self.refine_attention(X_rec_with_masks)
+        X_refine_out = self.refine_tail(X_refine_out)
         X_refine_out = torch.clamp(X_refine_out, -1., 1.)
 
         # merging refinement with original image

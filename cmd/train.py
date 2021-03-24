@@ -36,6 +36,7 @@ def train():
             logger=neptune_logger, # neptune logger
             max_epochs=10,         # epoch count
             val_check_interval=50, # check each 50 batch
+            #  track_grad_norm=2,
         )
 
     trainer.fit(model, data)

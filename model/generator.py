@@ -125,7 +125,7 @@ class SNPatchGANGenerator(nn.Module):
             gated_conv2d(64, 128, 3, 2, 1),             # layer 04 (64 x 128 x 128) -> (128 x 64 x 64)
             gated_conv2d(128, 128, 3, 1, 1),            # layer 05 (128 x 64 x 64)  -> (128 x 64 x 64)
             gated_conv2d(128, 128, 3, 1, 1),            # layer 06 (128 x 64 x 64)  -> (128 x 64 x 64)
-            ml.SelfAttention(in_channels=128),          # layer 07 (128 x 64 x 64)  -> (128 x 64 x 64)
+            ml.Self_Attn(128),                          # layer 07 (128 x 64 x 64)  -> (128 x 64 x 64)
             gated_conv2d(128, 128, 3, 1, 1),            # layer 08 (128 x 64 x 64)  -> (128 x 64 x 64)
             gated_conv2d(128, 128, 3, 1, 1),            # layer 09 (128 x 64 x 64)  -> (128 x 64 x 64)
         )
@@ -167,6 +167,7 @@ class SNPatchGANGenerator(nn.Module):
         # step 1: coarse reconstruct
         X_coarse = self.coarse(input_tensor)
         X_coarse = torch.clamp(X_coarse, -1., 1.)
+        X_coarse_raw = X_coarse
         X_coarse = masked_images + X_coarse * shaped_masks
 
         # step 2: refinement
@@ -176,14 +177,17 @@ class SNPatchGANGenerator(nn.Module):
         X_refine_out = torch.clamp(X_refine_out, -1., 1.)
 
         # merging refinement with original image
+        X_recon_raw = X_refine_out
         X_recon = X_refine_out * shaped_masks + shaped_images * (1 - shaped_masks)
 
         # making image out of tensors
         X_recon = model.utils.normalize_tensor(X_recon, smin=-1, smax=1, tmin=0, tmax=255)
         X_recon = X_recon.permute(0, 2, 3, 1)
 
-        X_coarse = model.utils.normalize_tensor(X_coarse, smin=-1, smax=1, tmin=0, tmax=255)
-        X_coarse = X_coarse.permute(0, 2, 3, 1)
+        X_coarse_raw = model.utils.normalize_tensor(X_coarse_raw, smin=-1, smax=1, tmin=0, tmax=255)
+        X_coarse_raw = X_coarse_raw.permute(0, 2, 3, 1)
 
-        return X_recon, X_coarse
+        X_recon_raw = model.utils.normalize_tensor(X_recon_raw, smin=-1, smax=1, tmin=0, tmax=255)
+        X_recon_raw = X_recon_raw.permute(0, 2, 3, 1)
+        return X_recon, X_coarse_raw, X_recon_raw
 
